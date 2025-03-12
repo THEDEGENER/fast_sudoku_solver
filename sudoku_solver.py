@@ -2,7 +2,7 @@ import os
 import time
 
 class SudokuSolver():
-    def __init__(self, board):
+    def __init__(self, board=None):
         self.board = board
 
     def _print_board(self, board, col, row):
@@ -64,7 +64,7 @@ class SudokuSolver():
                                 best_cell = (i, j)
                 return False if best_cell is None else best_cell
 
-    def timing(func):
+    def _timing(func):
         """Times the completion time of the different methods"""
         def wrapper(*args, **kwargs):
             start_time = time.perf_counter()
@@ -73,65 +73,55 @@ class SudokuSolver():
             print(f"{func.__name__} took {end_time - start_time:.4f} seconds")
             return result
         return wrapper
-    
 
-    @timing
-    def slow_solve(self):
-
-        def solve_sudoku_slow(board):
-            """Recursivly trys all possible combinations within a for loop and if a deadend is reach the current candidated
-                will be changed back to 0, essentially backtracking on the decision and the for loop will advance and the next
-                possible candidate will be tested untill all posiblities are exhausted and the puzzle is either complete or invalid"""
-            
-            free = self._find_free_space(board, mode="slow")
-            if not free:
-                return True
-            row, col = free
-
-            # the solution trys the candidate and recursivly calls the function if true
-            # if the solution hits a dead end the decision is undone with board[][] = 0
-            # the for loop then tries the next possible combination until all possiblilties have been exhausted
-            for num in range(1, 10):
-                if self._is_valid(board, num, col, row):
-                    board[row][col] = num
-                    os.system('clear')
-                    self._print_board(board, col, row)
-                    # time.sleep(0.5)
-                    if solve_sudoku_slow(board):
-                        return True
-                    board[row][col] = 0
-
-            return False
-        
-        return solve_sudoku_slow(self.board)
-
-    @timing 
-    def fast_solve(self):
-        """Utilizes a method called Minimum Remaining Values (MRV) to greatly reduces the time to solve by catching deadends earlier """
-        
-        def solve_sudoku_fast(board):
-            free = self._find_free_space(board, mode="fast")
+ 
+    def _solve(self, board, mode):
+        if mode == "fast":
+            free = self._find_free_space(board, mode)
             if free is None:
                 return False  # unsolvable branch detected
             if free is False:
                 return True 
             row, col = free
+        elif mode == "slow":
+            free = self._find_free_space(board, mode)
+            if not free:
+                return True
+            row, col = free 
+        # the solution trys the candidate and recursivly calls the function if true
+        # if the solution hits a dead end the decision is undone with board[][] = 0
+        # the for loop then tries the next possible combination until all possiblilties have been exhausted
+        for num in range(1, 10):
+            if self._is_valid(board, num, col, row):
+                board[row][col] = num
+                os.system('clear')
+                self._print_board(board, col, row)
+                # time.sleep(0.5)
+                if self._solve(board, mode):
+                    return True
+                board[row][col] = 0    
+        return False
+    
+    def input_board(self, mode):
+        if self.board is not None:
+            raise Exception(f"Input_board method can only be called if a board hasnt been passed to the class instance")
+        board = []
+        for i in range(1, 10):
+            row = []
+            row_values = input(f"row: {i}, value: ")
+            for num in row_values:
+                row.append(int(num))
+            board.append(row)
+        self.board = board
+        return self.solve_sudoku(mode)
+    
 
-            # the solution trys the candidate and recursivly calls the function if true
-            # if the solution hits a dead end the decision is undone with board[][] = 0
-            # the for loop then tries the next possible combination until all possiblilties have been exhausted
-            for num in range(1, 10):
-                if self._is_valid(board, num, col, row):
-                    board[row][col] = num
-                    os.system('clear')
-                    self._print_board(board, col, row)
-                    # time.sleep(0.5)
-                    if solve_sudoku_fast(board):
-                        return True
-                    board[row][col] = 0    
-            return False
-        
-        return solve_sudoku_fast(self.board)
+    @_timing
+    def solve_sudoku(self, mode: str):
+        """Recursivly trys all possible combinations within a for loop and if a deadend is reach the current candidated
+            will be changed back to 0, essentially backtracking on the decision and the for loop will advance and the next
+            possible candidate will be tested untill all posiblities are exhausted and the puzzle is either complete or invalid"""
+        return self._solve(self.board, mode)
 
 
 if __name__ == "__main__":
@@ -147,9 +137,10 @@ if __name__ == "__main__":
         [0, 9, 0, 0, 0, 0, 4, 0, 0],
     ]
 
-solve = SudokuSolver(board)
+    solve = SudokuSolver(board)
 
-solve.fast_solve()
+
+    solve.solve_sudoku("fast")
 
 
 
